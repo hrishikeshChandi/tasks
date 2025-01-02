@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screenshots</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      body {
+        background-color: #1a1a1a;
+        color: white;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+      }
+
+      .container {
+        background-color: #b9d2e9;
+        width: 600px;
+        height: 600px;
+        border-radius: 10px;
+      }
+
+      form {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 10px;
+        color: black;
+      }
+
+      input,
+      textarea {
+        background-color: #ffffff;
+        width: 90%;
+        padding: 10px;
+        font-size: 20px;
+        border-radius: 10px;
+        border: none;
+        resize: none;
+      }
+
+      button {
+        padding: 10px 20px;
+        display: inline-block;
+        width: 215px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      form > div {
+        display: flex;
+        gap: 110px;
+      }
+      button[type="submit"] {
+        background-color: #28a745;
+        color: white;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #218838;
+      }
+
+      button[type="reset"] {
+        background-color: #ffc107;
+        color: black;
+      }
+
+      button[type="reset"]:hover {
+        background-color: #e0a800;
+      }
+      label {
+        font-weight: 600;
+        color: rgb(43, 43, 43);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <form action="submit" method="post">
+        <label for="links">Enter urls:</label>
+        <p>Enter all the URLs in separate lines</p>
+        <textarea
+          name="links"
+          id="links"
+          cols="30"
+          rows="7"
+          required
+        ></textarea>
+        <div>
+          <button type="submit">Submit</button>
+          <button type="reset" id="reset">Reset</button>
+        </div>
+        <label for="results">Results:</label>
+        <textarea cols="20" rows="7" name="results" readonly>
+          {% for x  in results %}
+            url {{loop.index}} : {{x}}
+          {% endfor %}
+        </textarea>
+      </form>
+    </div>
+  </body>
+  <script>
+    document.querySelector("#reset").addEventListener("click", () => {
+      window.location.href = "/";
+    });
+  </script>
+</html>
