@@ -192,4 +192,8 @@ def submit():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=1500)
+    try:
+        app.run(debug=True, port=1500)
+    finally:
+        driver.quit()
+        connection.close()
