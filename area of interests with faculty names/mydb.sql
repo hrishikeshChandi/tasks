@@ -1,0 +1,15 @@
+CREATE DATABASE IF NOT EXISTS college_details;
+USE college_details;
+
+CREATE TABLE IF NOT EXISTS faculty(
+	id INT PRIMARY KEY AUTO_INCREMENT,
+    dept VARCHAR(50),
+    area VARCHAR(50) UNIQUE,
+    names LONGTEXT
+);
+
+CREATE TABLE IF NOT EXISTS area_of_interests(
+	id INT PRIMARY KEY AUTO_INCREMENT,
+    dept VARCHAR(50) UNIQUE,
+    areas LONGTEXT
+);

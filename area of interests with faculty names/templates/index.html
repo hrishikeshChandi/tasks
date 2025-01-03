@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        font-family: "Helvetica";
+      }
+      body {
+        background-color: #1a1a1a;
+        color: white;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+      }
+
+      .container {
+        background-color: #b9d2e9;
+        width: 500px;
+        height: 520px;
+        border-radius: 10px;
+      }
+
+      form {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 10px;
+        color: black;
+      }
+
+      input,
+      textarea {
+        background-color: #ffffff;
+        width: 90%;
+        padding: 10px;
+        font-size: 20px;
+        border-radius: 10px;
+        border: none;
+        resize: none;
+        align-self: center;
+      }
+
+      button {
+        padding: 10px 20px;
+        display: inline-block;
+        width: 215px;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      form > div {
+        display: flex;
+        gap: 20px;
+      }
+      button[type="submit"] {
+        background-color: #28a745;
+        color: white;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #218838;
+      }
+
+      button[type="reset"] {
+        background-color: #ffc107;
+        color: black;
+      }
+
+      button[type="reset"]:hover {
+        background-color: #e0a800;
+      }
+      label {
+        font-weight: 600;
+        color: rgb(43, 43, 43);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Separate Form for Search -->
+      <form action="/search_dept" method="POST">
+        <label for="dept">Enter the Department :</label>
+        <input type="text" name="dept" required />
+
+        <!-- Search Button that triggers POST request -->
+        <button type="submit" id="search">Search Department</button>
+      </form>
+      {% if areas %}
+      <!-- Main Form for Submit -->
+      <form action="/submit" method="POST">
+        <input type="hidden" name="dept" value="{{ dept }}" />
+        <input type="hidden" name="dept" value="{{ dept }}" />
+        <label for="domains">Select Area of Interest:</label>
+        <select id="domains" name="domains" required>
+          {% for area in areas %}
+          <option value="{{ area }}">{{ area }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit">Submit</button>
+      </form>
+      {% endif %}
+      <!-- <button type="reset" id="reset">Reset</button> -->
+      {% if results %}
+      <div style="padding: 25 25 25 25; margin: auto">
+        <label>Results : </label>
+        <textarea cols="20" rows="7" readonly>
+          {{ user_interest }}
+          {% for x in results %}
+            {{loop.index}}. {{ x }}
+          {% endfor %}
+        </textarea>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+  <!-- <script>
+    document.querySelector("#reset").addEventListener("click", (event) => {
+      window.location.href = "/";
+    });
+  </script> -->
+</html>
