@@ -2,3 +2,4 @@ Flask
 selenium
 webdriver-manager
 mysql-connector-python
+pymongo
