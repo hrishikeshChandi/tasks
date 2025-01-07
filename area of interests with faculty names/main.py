@@ -1,32 +1,38 @@
 import time
+from pymongo import MongoClient
 from flask import Flask, render_template, request
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from webdriver_manager.chrome import ChromeDriverManager
-import mysql.connector
 
 # pip install -r requirements.txt
 
-connection = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="abcd",
-    database="college_details",
-)
-
-cursor = connection.cursor()
+client = MongoClient("mongodb://localhost:27017/")
+db = client["college_details"]
+faculty_collections = db["faculty"]
+area_collections = db["area_of_interest"]
 
 app = Flask(__name__)
 
-chrome_options = Options()
-# chrome_options.add_experimental_option("detach", True)
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--no-sandbox")
-service = Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=chrome_options)
+
+def get_driver():
+    chrome_options = Options()
+    chrome_options.add_experimental_option("detach", True)
+    # chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--disable-gpu")
+    # chrome_options.add_argument("--no-sandbox")
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=chrome_options)
+
 
 choose_department = {
     "aerospace": "aerospace",
@@ -54,20 +60,20 @@ choose_department = {
     "physics": "physics",
     "ete": "te",
 }
+
 areas_input = None
 
 
 def area_of_interests(dept):
-    try:
-        cursor.execute(
-            "SELECT * FROM area_of_interests WHERE dept=%s", (choose_department[dept],)
-        )
-        details = cursor.fetchone()
-
-        if details and len(details[2]) > 0:
+    details = area_collections.find_one({"dept": choose_department.get(dept)})
+    if details and details["areas"]:
+        if len(details["areas"]) > 0:
             print("Data found in DB")
-            return details[2].split(",")
-
+            return details["areas"]
+        else:
+            area_collections.delete_one({"dept": choose_department[dept]})
+    driver = get_driver()
+    try:
         print("No data found in DB, scraping data...")
         url = f"https://msrit.edu/department/faculty.html?dept={choose_department[dept]}.html#start"
         driver.get(url)
@@ -77,50 +83,55 @@ def area_of_interests(dept):
         for name in names:
             try:
                 name.click()
+                time.sleep(2)
                 div = driver.find_element(By.CSS_SELECTOR, ".table-responsive")
                 areas = div.find_elements(By.CSS_SELECTOR, ".course-title")
+
                 for area in areas:
-                    if area.text != "" and area.text not in area_of_interest:
+                    if area.text and area.text not in area_of_interest:
                         area_of_interest.append(area.text)
                         print(f"Added area: {area.text}")
                 driver.back()
                 names = driver.find_elements(By.CSS_SELECTOR, ".inner header a")
+            except NoSuchElementException:
+                driver.back()
+            except StaleElementReferenceException:
+                names = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located(
+                        (By.CSS_SELECTOR, ".inner header a")
+                    )
+                )
             except Exception as e:
                 print(f"Error while scraping faculty area: {e}")
 
         if area_of_interest:
             area_of_interest.sort()
-            list_areas = area_of_interest
-            final_areas = ",".join(area_of_interest)
-            cursor.execute(
-                "INSERT INTO area_of_interests(dept, areas) VALUES(%s, %s)",
-                (choose_department[dept], final_areas),
+            area_collections.insert_one(
+                {"dept": choose_department[dept], "areas": area_of_interest}
             )
-            connection.commit()
             print("Data has been stored in DB")
-            return list_areas
+            driver.quit()
+            return area_of_interest
         else:
             print("No areas of interest found during scraping.")
             return []
-
-    except Exception as e:
-        print(f"Error in area_of_interests: {e}")
-        return []
+    finally:
+        driver.quit()
 
 
 def faculty_names(dept, input_area_of_interest):
-    try:
-        cursor.execute(
-            "SELECT * FROM faculty WHERE dept=%s AND area=%s",
-            (choose_department[dept], input_area_of_interest),
-        )
-        details = cursor.fetchone()
-        if details and len(details[3]) > 0:
+    details = faculty_collections.find_one(
+        {"dept": choose_department[dept], "area": input_area_of_interest}
+    )
+    if details:
+        if len(details["names"]) > 0:
             print("Data found in DB")
-            return details[3].split(",")
-    except Exception as e:
-        print(f"Error fetching faculty data from DB: {e}")
-
+            return details["names"]
+        else:
+            faculty_collections.delete_one(
+                {"dept": choose_department[dept], "area": input_area_of_interest}
+            )
+    driver = get_driver()
     try:
         print("Finding names...")
         url = f"https://msrit.edu/department/faculty.html?dept={choose_department[dept]}.html#start"
@@ -132,34 +143,43 @@ def faculty_names(dept, input_area_of_interest):
             try:
                 faculty_name = name.text
                 name.click()
-                # time.sleep(2)
+                time.sleep(2)
                 div = driver.find_element(By.CSS_SELECTOR, ".table-responsive")
                 areas = div.find_elements(By.CSS_SELECTOR, ".course-title")
-                area_of_interest = [area.text for area in areas if area.text != ""]
+                area_of_interest = [area.text for area in areas if area.text]
+
                 if input_area_of_interest in area_of_interest:
                     faculties.append(faculty_name)
                     print(faculty_name)
                 driver.back()
                 names = driver.find_elements(By.CSS_SELECTOR, ".inner header a")
+            except NoSuchElementException:
+                driver.back()
+            except StaleElementReferenceException:
+                names = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located(
+                        (By.CSS_SELECTOR, ".inner header a")
+                    )
+                )
             except Exception as e:
                 print(f"Error while processing faculty: {e}")
 
         if faculties:
-            list_faculties = faculties
-            string_faculties = ",".join(faculties)
-            cursor.execute(
-                "INSERT INTO faculty(dept, area, names) VALUES(%s, %s, %s)",
-                (choose_department[dept], input_area_of_interest, string_faculties),
+            faculty_collections.insert_one(
+                {
+                    "dept": choose_department[dept],
+                    "area": input_area_of_interest,
+                    "names": faculties,
+                }
             )
-            connection.commit()
             print("Data has been stored in DB")
-            return list_faculties
+            driver.quit()
+            return faculties
         else:
             print("No faculty found for the given area of interest.")
             return []
-    except Exception as e:
-        print(f"Error in faculty names processing: {e}")
-        return []
+    finally:
+        driver.quit()
 
 
 @app.route("/")
@@ -195,5 +215,4 @@ if __name__ == "__main__":
     try:
         app.run(debug=True, port=1500)
     finally:
-        driver.quit()
-        connection.close()
+        client.close()
